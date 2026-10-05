@@ -1,22 +1,52 @@
-// sw.js - Archivo del Service Worker
+// sw.js - Service Worker con Cache API
 
-// FASE 1: Instalación
-// Se dispara cuando el archivo se descarga por primera vez o hay cambios en él.
+// 1. Definimos el nombre y la versión de la caché estática
+const CACHE_NAME = 'devconnect-shell-v1';
+
+// 2. Listamos todos los recursos estáticos esenciales que forman el App Shell
+const STATIC_ASSETS = [
+    '/',
+    '/index.html',
+    '/css/style.css',
+    '/js/app.js',
+    '/manifest.json',
+    '/images/icon-192x192.png',
+    '/images/icon-512x512.png',
+    'https://cdn.tailwindcss.com',
+    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
+];
+
+// FASE DE INSTALACIÓN: Guardando recursos estáticos
 self.addEventListener('install', event => {
-    console.log('SW: 1. Instalado correctamente.');
-    // En la siguiente clase, aquí guardaremos archivos en caché.
+    console.log('SW: Guardando recursos estáticos en la caché...');
+
+    // Esperamos a que la promesa de guardado se complete antes de finalizar la instalación
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then(cache => {
+                console.log('SW: Caché abierta con éxito:', CACHE_NAME);
+                // Agregamos todos los archivos estáticos a la memoria caché
+                return cache.addAll(STATIC_ASSETS);
+            })
+            .then(() => {
+                console.log('SW: Todos los archivos del App Shell fueron almacenados.');
+                // Forzamos al nuevo Service Worker a activarse de inmediato
+                return self.skipWaiting();
+            })
+            .catch(err => {
+                console.error('SW: Falló el almacenamiento en caché del App Shell:', err);
+            })
+    );
 });
 
-// FASE 2: Activación
-// Se dispara cuando el SW toma el control de la aplicación.
+// FASE DE ACTIVACIÓN
 self.addEventListener('activate', event => {
-    console.log('SW: 2. Activado y listo para controlar la app.');
-    // En la siguiente clase, aquí borraremos cachés obsoletas.
+    console.log('SW: Activado y listo.');
+    return self.clients.claim();
 });
 
-// FASE 3: Intercepción de Peticiones (Fetch)
-// Se dispara cada vez que la página HTML pide un recurso (CSS, JS, imágenes, etc.)
+// FASE FETCH (Escuchando peticiones)
 self.addEventListener('fetch', event => {
-    console.log('SW: 3. Interceptando petición hacia ->', event.request.url);
-    // Por ahora, dejamos que la petición continúe su viaje normal a internet.
+    // Por ahora solo monitoreamos en consola
+    console.log('SW pidiendo:', event.request.url);
 });
